@@ -1,0 +1,71 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Admin\\source\\repos\\GrabFramesXtium2-CLHS_PX8_1\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{3753DC19-B3AD-4D4C-A63F-B38FFFB3AC2A}|GrabFramesGeneral.csproj|c:\\users\\admin\\source\\repos\\grabframesxtium2-clhs_px8_1\\framesarea.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3753DC19-B3AD-4D4C-A63F-B38FFFB3AC2A}|GrabFramesGeneral.csproj|solutionrelative:framesarea.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3753DC19-B3AD-4D4C-A63F-B38FFFB3AC2A}|GrabFramesGeneral.csproj|c:\\users\\admin\\source\\repos\\grabframesxtium2-clhs_px8_1\\myaquisitionparams.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3753DC19-B3AD-4D4C-A63F-B38FFFB3AC2A}|GrabFramesGeneral.csproj|solutionrelative:myaquisitionparams.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3753DC19-B3AD-4D4C-A63F-B38FFFB3AC2A}|GrabFramesGeneral.csproj|c:\\users\\admin\\source\\repos\\grabframesxtium2-clhs_px8_1\\framestdi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3753DC19-B3AD-4D4C-A63F-B38FFFB3AC2A}|GrabFramesGeneral.csproj|solutionrelative:framestdi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MyAquisitionParams.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\source\\repos\\GrabFramesXtium2-CLHS_PX8_1\\MyAquisitionParams.cs",
+              "RelativeDocumentMoniker": "MyAquisitionParams.cs",
+              "ToolTip": "C:\\Users\\Admin\\source\\repos\\GrabFramesXtium2-CLHS_PX8_1\\MyAquisitionParams.cs",
+              "RelativeToolTip": "MyAquisitionParams.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAAeAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-20T14:16:52.237Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "FramesTDI.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\source\\repos\\GrabFramesXtium2-CLHS_PX8_1\\FramesTDI.cs",
+              "RelativeDocumentMoniker": "FramesTDI.cs",
+              "ToolTip": "C:\\Users\\Admin\\source\\repos\\GrabFramesXtium2-CLHS_PX8_1\\FramesTDI.cs",
+              "RelativeToolTip": "FramesTDI.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAABsAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-15T20:29:26.776Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "FramesArea.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\source\\repos\\GrabFramesXtium2-CLHS_PX8_1\\FramesArea.cs",
+              "RelativeDocumentMoniker": "FramesArea.cs",
+              "ToolTip": "C:\\Users\\Admin\\source\\repos\\GrabFramesXtium2-CLHS_PX8_1\\FramesArea.cs",
+              "RelativeToolTip": "FramesArea.cs",
+              "ViewState": "AgIAABQAAAAAAAAAAAAQwCkAAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-15T20:26:49.232Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

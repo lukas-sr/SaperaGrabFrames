@@ -1,0 +1,8 @@
+C:\Users\Admin\source\repos\GrabFramesXtium2-CLHS_PX8_1\bin\Debug\GrabFramesXtium2-CLHS_PX8_1.dll
+C:\Users\Admin\source\repos\GrabFramesXtium2-CLHS_PX8_1\bin\Debug\GrabFramesXtium2-CLHS_PX8_1.pdb
+C:\Users\Admin\source\repos\GrabFramesXtium2-CLHS_PX8_1\bin\Debug\DALSA.SaperaLT.SapClassBasic.dll
+C:\Users\Admin\source\repos\GrabFramesXtium2-CLHS_PX8_1\obj\Debug\GrabFramesXtium2-CLHS_PX8_1.csproj.AssemblyReference.cache
+C:\Users\Admin\source\repos\GrabFramesXtium2-CLHS_PX8_1\obj\Debug\GrabFramesXtium2-CLHS_PX8_1.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\GrabFramesXtium2-CLHS_PX8_1\obj\Debug\GrabFram.30855554.Up2Date
+C:\Users\Admin\source\repos\GrabFramesXtium2-CLHS_PX8_1\obj\Debug\GrabFramesXtium2-CLHS_PX8_1.dll
+C:\Users\Admin\source\repos\GrabFramesXtium2-CLHS_PX8_1\obj\Debug\GrabFramesXtium2-CLHS_PX8_1.pdb
