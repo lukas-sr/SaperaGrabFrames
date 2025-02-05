@@ -18,7 +18,7 @@ public class FramesArea
     public static int sizeArr = 0;
     public static Int16[,] framesArr = null;
     public MyAcquisitionParams acqParams;
-    private static int countFrame = 0;
+    private int countFrame = 0;
 
     public FramesArea(string serverName)
     {
@@ -33,9 +33,8 @@ public class FramesArea
         acqParams.ConfigFileName = filePath;
 
         if ((acqParams.ConfigFileName != null) && ((acqParams.ServerName.Equals("Xtium-CLHS_PX8_1")) || (acqParams.ServerName.Equals("Xtium2-CLHS_PX8_1"))))
-        {
             return true;
-        }
+    }
 
         return false;
     }
