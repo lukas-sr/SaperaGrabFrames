@@ -8,17 +8,19 @@ using DALSA.SaperaLT.SapClassBasic;
 
 public class FramesArea
 {
-    public static SapAcquisition Acq = null;
-    public static SapAcqDevice AcqDevice = null;
-    public static SapBuffer Buffers = null;
-    public static SapTransfer Xfer = null;
-    public static SapView View = null;
-    public static SapLocation loc = null;
+    public static SapAcquisition Acq;
+    public static SapAcqDevice AcqDevice;
+    public static SapBuffer Buffers;
+    public static SapTransfer Xfer;
+    public static SapView View;
+    public static SapLocation loc;
     public static int numFrames = 1;
     public static int sizeArr = 0;
-    public static Int16[,] framesArr = null;
+    public static Int32[,] framesArr;
     public MyAcquisitionParams acqParams;
-    private int countFrame = 0;
+    private static int countFrame = 0;
+
+    const UInt16 MAX_TIME = 500;
 
     public FramesArea(string serverName)
     {
@@ -33,8 +35,9 @@ public class FramesArea
         acqParams.ConfigFileName = filePath;
 
         if ((acqParams.ConfigFileName != null) && ((acqParams.ServerName.Equals("Xtium-CLHS_PX8_1")) || (acqParams.ServerName.Equals("Xtium2-CLHS_PX8_1"))))
+        {
             return true;
-    }
+        }
 
         return false;
     }
@@ -105,7 +108,7 @@ public class FramesArea
         }
         Xfer.Snap(numFrames);
 
-        Xfer.Wait(numFrames * 500);
+        Xfer.Wait(MAX_TIME);
         DestroysObjects();
         loc.Dispose();
     }
@@ -121,7 +124,7 @@ public class FramesArea
     }
     public static void SaveFrameArray(int size, IntPtr buffAddress)
     {
-        Int16[] imageData = new Int16[size];
+        Int32[] imageData = new Int32[size];
         Marshal.Copy(buffAddress, imageData, 0, size);
 
         for (int i = 0; i < size; i++)
@@ -137,7 +140,7 @@ public class FramesArea
 
     public static void InitializeFrameArray(int dim1, int dim2)
     {
-        framesArr = (Int16[,])Array.CreateInstance(typeof(Int16), dim1, dim2);
+        framesArr = (Int32[,])Array.CreateInstance(typeof(Int32), dim1, dim2);
     }
     public static void DestroysObjects()
     {

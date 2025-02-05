@@ -19,7 +19,7 @@ public class FramesTDI
     public static SapLocation loc = null;
     public static int numFrames = 1;
     public static int sizeArr = 0;
-    public static Int16[,] framesArr = null;
+    public static Int32[,] framesArr = null;
     public MyAcquisitionParams acqParams;
     private static int countFrame = 0;
 
@@ -125,7 +125,7 @@ public class FramesTDI
     }
     public static void SaveFrameArray(int size, IntPtr buffAddress)
     {
-        Int16[] imageData = new Int16[size];
+        Int32[] imageData = new Int32[size];
         Marshal.Copy(buffAddress, imageData, 0, size);
 
         for (int i = 0; i < size; i++)
@@ -140,7 +140,7 @@ public class FramesTDI
     }
     public static void InitializeFrameArray(int dim1, int dim2)
     {
-        framesArr = (Int16[,])Array.CreateInstance(typeof(Int16), dim1, dim2);
+        framesArr = (Int32[,])Array.CreateInstance(typeof(Int32), dim1, dim2);
     }
     public static void DestroysObjects()
     {
