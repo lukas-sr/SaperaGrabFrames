@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using DALSA.SaperaLT.SapClassBasic;
 
 public class FramesArea
@@ -14,13 +10,13 @@ public class FramesArea
     public static SapTransfer Xfer;
     public static SapView View;
     public static SapLocation loc;
-    public static int numFrames = 1;
-    public static int sizeArr = 0;
-    public static Int32[,] framesArr;
     public MyAcquisitionParams acqParams;
-    private static int countFrame = 0;
+    public static UInt32[,] framesArr;
+    public static UInt16 countFrame = 0;
+    public static UInt16 numFrames = 1;
 
-    const UInt16 MAX_TIME = 500;
+    private readonly String[] camsAvailable = { "Xtium-CLHS_PX8_1", "Xtium2-CLHS_PX8_1" };
+    private readonly byte MAX_TIME = 255;
 
     public FramesArea(string serverName)
     {
@@ -30,18 +26,18 @@ public class FramesArea
             ServerName = serverName
         };
     }
-    public bool setConfigFile(string filePath)
+    public bool SetConfigFile(string filePath)
     {
         acqParams.ConfigFileName = filePath;
 
-        if ((acqParams.ConfigFileName != null) && ((acqParams.ServerName.Equals("Xtium-CLHS_PX8_1")) || (acqParams.ServerName.Equals("Xtium2-CLHS_PX8_1"))))
+        if ((acqParams.ConfigFileName != null) && ((acqParams.ServerName.Equals(camsAvailable[0])) || (acqParams.ServerName.Equals(camsAvailable[1]))))
         {
             return true;
         }
 
         return false;
     }
-    public void ConfigureGrabArea()
+    public bool ConfigureGrabArea()
     {
         loc = new SapLocation(acqParams.ServerName, acqParams.ResourceIndex);
 
@@ -55,9 +51,19 @@ public class FramesArea
             if (!Acq.Create())
             {
                 DestroysObjects();
-                return;
+                return false;
             }
-            Acq.EnableEvent(SapAcquisition.AcqEventType.StartOfFrame);
+
+            if (Acq != null && Acq.IsCapabilityAvailable(SapAcquisition.Cap.EVENT_TYPE))
+            {
+                Acq.EnableEvent(SapAcquisition.AcqEventType.StartOfFrame);
+                return true;
+            }
+            else
+            {
+                DestroysObjects();
+                return false;
+            }
         }
 
         else if (SapManager.GetResourceCount(acqParams.ServerName, SapManager.ResourceType.AcqDevice) > 0)
@@ -70,7 +76,7 @@ public class FramesArea
             if (!AcqDevice.Create())
             {
                 DestroysObjects();
-                return;
+                return false;
             }
         }
 
@@ -79,6 +85,8 @@ public class FramesArea
         Xfer.Pairs[0].EventType = SapXferPair.XferEventType.EndOfFrame;
         Xfer.XferNotify += new SapXferNotifyHandler(Xfer_XferNotify);
         Xfer.XferNotifyContext = View;
+
+        return true;
     }
     public void StartSnap()
     {
@@ -89,9 +97,7 @@ public class FramesArea
             return;
         }
 
-        // For TDI Case the heigth of the buffer must be equal 1
-        sizeArr = Buffers.Width * Buffers.Height;
-        InitializeFrameArray(numFrames, sizeArr);
+        InitializeFrameArray(numFrames, (UInt32)(Buffers.Width*Buffers.Height));
 
         // Create buffer object
         if (!Xfer.Create())
@@ -106,30 +112,57 @@ public class FramesArea
             DestroysObjects();
             return;
         }
-        Xfer.Snap(numFrames);
-
+        Xfer.Snap((int)numFrames);
         Xfer.Wait(MAX_TIME);
+
         DestroysObjects();
         loc.Dispose();
     }
     public virtual void Xfer_XferNotify(object sender, SapXferNotifyEventArgs args)
     {
-        // refresh view
-        SapView View = args.Context as SapView;
-        View.Show();
+        //// refresh view
+        //SapView View = args.Context as SapView;
+        //View.Show();
 
-        // save Buffer
-        Buffers.GetAddress(out IntPtr buffAddress);
-        SaveFrameArray(sizeArr, buffAddress);
+        //// save Buffer
+        //Buffers.GetAddress(out IntPtr buffAddress);
+        //SaveFrameArray((UInt32)(Buffers.Width*Buffers.Height), buffAddress);
+        
+        // Verify if Xfer it is not null and active yet
+        if (Xfer == null || !Xfer.Grabbing)
+        {
+            return;
+        }
+
+        SapView view = args.Context as SapView;
+        if (view == null)
+        {
+            return;
+        }
+
+        // Update visualization
+        view.Show();
+
+        // Save image buffer
+        if (Buffers != null && Buffers.GetAddress(out IntPtr buffAddress))
+        {
+            SaveFrameArray((UInt32)(Buffers.Width*Buffers.Height), buffAddress);
+        }
+        else
+        {
+            return;
+        }
+    
+
     }
-    public static void SaveFrameArray(int size, IntPtr buffAddress)
+    public static void SaveFrameArray(UInt32 size, IntPtr buffAddress)
     {
-        Int32[] imageData = new Int32[size];
-        Marshal.Copy(buffAddress, imageData, 0, size);
+        byte[] byteArr = new byte[size * sizeof(UInt32)];
+        Marshal.Copy(buffAddress, byteArr, 0, byteArr.Length);
 
         for (int i = 0; i < size; i++)
         {
-            framesArr[countFrame, i] = imageData[i];
+            framesArr[countFrame, i] = BitConverter.ToUInt32(byteArr, i * sizeof(UInt32));
         }
         countFrame++;
     }
@@ -138,9 +171,9 @@ public class FramesArea
         countFrame = 0;
     }
 
-    public static void InitializeFrameArray(int dim1, int dim2)
+    public static void InitializeFrameArray(UInt16 dim1, UInt32 dim2)
     {
-        framesArr = (Int32[,])Array.CreateInstance(typeof(Int32), dim1, dim2);
+        framesArr = (UInt32[,])Array.CreateInstance(typeof(UInt32), dim1, dim2);
     }
     public static void DestroysObjects()
     {
