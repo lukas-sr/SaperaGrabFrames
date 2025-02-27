@@ -4,19 +4,19 @@ using DALSA.SaperaLT.SapClassBasic;
 
 public class FramesArea
 {
-    public static SapAcquisition Acq;
-    public static SapAcqDevice AcqDevice;
-    public static SapBuffer Buffers;
-    public static SapTransfer Xfer;
-    public static SapView View;
+    public static SapAcquisition Acq = null;
+    public static SapAcqDevice AcqDevice = null;
+    public static SapBuffer Buffers = null;
+    public static SapTransfer Xfer = null;
+    public static SapView View = null;
     public static SapLocation loc;
     public MyAcquisitionParams acqParams;
-    public static UInt32[,] framesArr;
-    public static UInt16 countFrame = 0;
-    public static UInt16 numFrames = 1;
-
-    private readonly String[] camsAvailable = { "Xtium-CLHS_PX8_1", "Xtium2-CLHS_PX8_1" };
+    public static UInt16[,,] framesArr;
+    public static byte countFrame = 0;
+    public static byte numFrames = 128;
+    public static ushort BLOCK_SIZE;
     private readonly byte MAX_TIME = 255;
+    private readonly String[] camsAvailable = { "Xtium-CLHS_PX8_1", "Xtium2-CLHS_PX8_1" };
 
     public FramesArea(string serverName)
     {
@@ -26,13 +26,49 @@ public class FramesArea
             ServerName = serverName
         };
     }
+    public static void InitializeFrameArray(byte dim1, UInt16 dim2, UInt16 dim3)
+    {
+        framesArr = (UInt16[,,])Array.CreateInstance(typeof(UInt16), dim1, dim2, dim3);
+    }
+    public static void SaveFrameArray(UInt32 size, IntPtr buffAddress)
+    {
+        byte numBlocks = (byte)Math.Ceiling((double)size / BLOCK_SIZE);
+
+        for (byte block = 0; block < numBlocks; block++)
+        {
+            UInt16 currentBlockSize = (UInt16) Math.Min(BLOCK_SIZE, (int)size - block * BLOCK_SIZE);
+            int[] intArr = new int[currentBlockSize];
+            
+            Marshal.Copy(buffAddress + (block * BLOCK_SIZE * sizeof(Int16)), intArr, 0, currentBlockSize);
+
+            for (int i = 0; i < currentBlockSize; i++)
+            {
+                framesArr[countFrame, block, i] = (UInt16)intArr[i];
+            }
+        }
+        countFrame++;
+    }
+
     public bool SetConfigFile(string filePath)
     {
         acqParams.ConfigFileName = filePath;
 
-        if ((acqParams.ConfigFileName != null) && ((acqParams.ServerName.Equals(camsAvailable[0])) || (acqParams.ServerName.Equals(camsAvailable[1]))))
+        if ((acqParams.ConfigFileName != null))
         {
-            return true;
+            if (acqParams.ServerName.Equals(camsAvailable[0]))
+            {
+                BLOCK_SIZE = 12288;
+                return true;
+            }
+            if (acqParams.ServerName.Equals(camsAvailable[1]))
+            {
+                BLOCK_SIZE = 16384;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         return false;
@@ -97,7 +133,7 @@ public class FramesArea
             return;
         }
 
-        InitializeFrameArray(numFrames, (UInt32)(Buffers.Width*Buffers.Height));
+        InitializeFrameArray(numFrames, (UInt16) Buffers.Height, (UInt16) Buffers.Width);
 
         // Create buffer object
         if (!Xfer.Create())
@@ -112,7 +148,7 @@ public class FramesArea
             DestroysObjects();
             return;
         }
-        Xfer.Snap((int)numFrames);
+        Xfer.Snap();
         Xfer.Wait(MAX_TIME);
 
         DestroysObjects();
@@ -120,13 +156,6 @@ public class FramesArea
     }
     public virtual void Xfer_XferNotify(object sender, SapXferNotifyEventArgs args)
     {
-        //// refresh view
-        //SapView View = args.Context as SapView;
-        //View.Show();
-
-        //// save Buffer
-        //Buffers.GetAddress(out IntPtr buffAddress);
-        //SaveFrameArray((UInt32)(Buffers.Width*Buffers.Height), buffAddress);
         
         // Verify if Xfer it is not null and active yet
         if (Xfer == null || !Xfer.Grabbing)
@@ -146,7 +175,10 @@ public class FramesArea
         // Save image buffer
         if (Buffers != null && Buffers.GetAddress(out IntPtr buffAddress))
         {
-            SaveFrameArray((UInt32)(Buffers.Width*Buffers.Height), buffAddress);
+            while (countFrame < numFrames)
+            {
+                SaveFrameArray((UInt32)(Buffers.Width*Buffers.Height), buffAddress);
+            }
         }
         else
         {
@@ -155,26 +187,11 @@ public class FramesArea
     
 
     }
-    public static void SaveFrameArray(UInt32 size, IntPtr buffAddress)
-    {
-        byte[] byteArr = new byte[size * sizeof(UInt32)];
-        Marshal.Copy(buffAddress, byteArr, 0, byteArr.Length);
-
-        for (int i = 0; i < size; i++)
-        {
-            framesArr[countFrame, i] = BitConverter.ToUInt32(byteArr, i * sizeof(UInt32));
-        }
-        countFrame++;
-    }
     public static void ReInitializeCountFrame()
     {
         countFrame = 0;
     }
 
-    public static void InitializeFrameArray(UInt16 dim1, UInt32 dim2)
-    {
-        framesArr = (UInt32[,])Array.CreateInstance(typeof(UInt32), dim1, dim2);
-    }
     public static void DestroysObjects()
     {
         if (Xfer != null)

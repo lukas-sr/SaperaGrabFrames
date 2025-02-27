@@ -11,11 +11,11 @@ public class FramesTDI
     public static SapView View = null;
     public static SapLocation loc = null;
     public static MyAcquisitionParams acqParams;
-    public static UInt16[,] framesArr;
-    public static UInt16 numFrames = 1;
-    public static UInt16 countFrame = 0;
-
-    const byte MAX_TIME = 255;
+    public static UInt16[,,] framesArr;
+    public static byte numFrames = 1;
+    public static byte countFrame = 0;
+    private readonly byte MAX_TIME = 255;
+    public static String[] camsAvailable = {"Xtium-CLHS_PX8_1", "Xtium2-CLHS_PX8_1" };
 
     public FramesTDI(string serverName)
     {
@@ -25,11 +25,27 @@ public class FramesTDI
             ServerName = serverName
         };
     }
+    public static void InitializeFrameArray(byte dim1, UInt32 dim2, UInt32 dim3)
+    {
+        framesArr = (UInt16[,,])Array.CreateInstance(typeof(UInt16), dim1, dim2, dim3);
+    }
+    public static void SaveFrameArray(int size, IntPtr buffAddress)
+    {
+        int[] intArr = new int[size];
+
+        Marshal.Copy(buffAddress, intArr, 0, size);
+
+        for (int i = 0; i < size; i++)
+        {
+            framesArr[countFrame, 0, i] = (UInt16)intArr[i];
+        }
+        countFrame++;
+    }
     public bool setConfigFile(string filePath)
     {
         acqParams.ConfigFileName = filePath;
 
-        if ((acqParams.ConfigFileName != null) && ( (acqParams.ServerName.Equals("Xtium-CLHS_PX8_1")) || (acqParams.ServerName.Equals("Xtium2-CLHS_PX8_1")) ) )
+        if ((acqParams.ConfigFileName != null) && ((acqParams.ServerName.Equals(camsAvailable[0])) || (acqParams.ServerName.Equals(camsAvailable[1])) ) )
         {
             return true;
         }
@@ -97,7 +113,7 @@ public class FramesTDI
         }
 
         // For TDI Case the heigth of the buffer is equal to 1
-        InitializeFrameArray(numFrames, (UInt16)Buffers.Width);
+        InitializeFrameArray(numFrames, 1, (UInt32)Buffers.Width);
 
         // Create buffer object
         if (!Xfer.Create())
@@ -120,7 +136,7 @@ public class FramesTDI
     }
     public virtual void Xfer_XferNotify(object sender, SapXferNotifyEventArgs args)
     {
-           // Verify if Xfer it is not null and active yet
+        // Verify if Xfer it is not null and active yet
         if (Xfer == null || !Xfer.Grabbing)
         {
             return;
@@ -138,7 +154,10 @@ public class FramesTDI
         // Save image buffer
         if (Buffers != null && Buffers.GetAddress(out IntPtr buffAddress))
         {
-            SaveFrameArray((Buffers.Width), buffAddress);
+            while(countFrame < numFrames)
+            {
+                SaveFrameArray((Buffers.Width), buffAddress);
+            }
         }
         else
         {
@@ -146,26 +165,12 @@ public class FramesTDI
         }
     
     }
-    public static void SaveFrameArray(int size, IntPtr buffAddress)
-    {
-        byte[] byteArr = new byte[size * sizeof(UInt16)];
-
-        Marshal.Copy(buffAddress, byteArr, 0, byteArr.Length);
-
-        for (int i = 0; i < size; i++)
-        {
-            framesArr[countFrame, i] = BitConverter.ToUInt16(byteArr, i * sizeof(UInt16));
-        }
-        countFrame++;
-    }
+    
     public static void ReInitializeCountFrame()
     {
         countFrame = 0;
     }
-    public static void InitializeFrameArray(UInt16 dim1, UInt16 dim2)
-    {
-        framesArr = (UInt16[,])Array.CreateInstance(typeof(UInt16), dim1, dim2);
-    }
+    
     public static void DestroysObjects()
     {
         if (Xfer != null)
