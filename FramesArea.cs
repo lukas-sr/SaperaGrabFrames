@@ -41,8 +41,7 @@ public class FramesArea
             
             Marshal.Copy(buffAddress + (block * BLOCK_SIZE * sizeof(Int16)), intArr, 0, currentBlockSize);
 
-            for (int i = 0; i < currentBlockSize; i++)
-            {
+            for (int i = 0; i < currentBlockSize; i++) {
                 framesArr[countFrame, block, i] = (UInt16)intArr[i];
             }
         }

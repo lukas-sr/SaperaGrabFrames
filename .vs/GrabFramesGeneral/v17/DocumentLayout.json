@@ -3,15 +3,15 @@
   "WorkspaceRootPath": "C:\\Users\\Admin\\source\\repos\\GrabFramesGeneral\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{3753DC19-B3AD-4D4C-A63F-B38FFFB3AC2A}|GrabFramesGeneral.csproj|C:\\Users\\Admin\\source\\repos\\GrabFramesGeneral\\framestdi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{3753DC19-B3AD-4D4C-A63F-B38FFFB3AC2A}|GrabFramesGeneral.csproj|solutionrelative:framestdi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{3753DC19-B3AD-4D4C-A63F-B38FFFB3AC2A}|GrabFramesGeneral.csproj|c:\\users\\admin\\source\\repos\\grabframesgeneral\\saperaframes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3753DC19-B3AD-4D4C-A63F-B38FFFB3AC2A}|GrabFramesGeneral.csproj|solutionrelative:saperaframes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|GrabFramesGeneral||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
     },
     {
       "AbsoluteMoniker": "D:0:0:{3753DC19-B3AD-4D4C-A63F-B38FFFB3AC2A}|GrabFramesGeneral.csproj|c:\\users\\admin\\source\\repos\\grabframesgeneral\\framesarea.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{3753DC19-B3AD-4D4C-A63F-B38FFFB3AC2A}|GrabFramesGeneral.csproj|solutionrelative:framesarea.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|GrabFramesGeneral||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
     },
     {
       "AbsoluteMoniker": "D:0:0:{3753DC19-B3AD-4D4C-A63F-B38FFFB3AC2A}|GrabFramesGeneral.csproj|C:\\Users\\Admin\\source\\repos\\GrabFramesGeneral\\myaquisitionparams.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -44,7 +44,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
               "Title": "GrabFramesGeneral",
               "DocumentMoniker": "C:\\Users\\Admin\\source\\repos\\GrabFramesGeneral\\GrabFramesGeneral.csproj",
               "RelativeDocumentMoniker": "GrabFramesGeneral.csproj",
@@ -56,13 +56,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "FramesArea.cs",
               "DocumentMoniker": "C:\\Users\\Admin\\source\\repos\\GrabFramesGeneral\\FramesArea.cs",
               "RelativeDocumentMoniker": "FramesArea.cs",
               "ToolTip": "C:\\Users\\Admin\\source\\repos\\GrabFramesGeneral\\FramesArea.cs",
               "RelativeToolTip": "FramesArea.cs",
-              "ViewState": "AgIAAAgAAAAAAAAAAAAQwBcAAAAJAAAAAAAAAA==",
+              "ViewState": "AgIAAEoAAAAAAAAAAAAzwFgAAAAdAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-01-15T20:26:49.232Z",
               "EditorCaption": ""
@@ -70,14 +70,14 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "FramesTDI.cs",
-              "DocumentMoniker": "C:\\Users\\Admin\\source\\repos\\GrabFramesGeneral\\FramesTDI.cs",
-              "RelativeDocumentMoniker": "FramesTDI.cs",
-              "ToolTip": "C:\\Users\\Admin\\source\\repos\\GrabFramesGeneral\\FramesTDI.cs",
-              "RelativeToolTip": "FramesTDI.cs",
-              "ViewState": "AgIAAA4AAAAAAAAAAADgvxkAAAAKAAAAAAAAAA==",
+              "Title": "SaperaFrames.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\source\\repos\\GrabFramesGeneral\\SaperaFrames.cs",
+              "RelativeDocumentMoniker": "SaperaFrames.cs",
+              "ToolTip": "C:\\Users\\Admin\\source\\repos\\GrabFramesGeneral\\SaperaFrames.cs*",
+              "RelativeToolTip": "SaperaFrames.cs*",
+              "ViewState": "AgIAAHIAAAAAAAAAAAAIwH4AAABJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-15T20:29:26.776Z",
+              "WhenOpened": "2025-02-27T19:42:51.095Z",
               "EditorCaption": ""
             }
           ]

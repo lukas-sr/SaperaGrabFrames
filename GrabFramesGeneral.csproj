@@ -71,6 +71,7 @@
     <Compile Include="FramesTDI.cs" />
     <Compile Include="MyAquisitionParams.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SaperaFrames.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
