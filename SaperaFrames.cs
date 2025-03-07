@@ -12,6 +12,7 @@ namespace GrabFramesGeneral
         private SapTransfer _transfer;
         private SapView _view;
         private SapLocation _location;  
+        private bool _disposed;
         public static MyAcquisitionParams _acqParams;
         public ushort[,,] framesArray { get; private set; }
         public byte numFrames { get; }
@@ -67,7 +68,7 @@ namespace GrabFramesGeneral
             if (dim1 == 0 || dim2 <= 0 || dim3 <= 0)
                 throw new ArgumentException("Invalid array dimensions");
 
-            FramesArray = new ushort[dim1, dim2, dim3];
+            framesArray = new ushort[dim1, dim2, dim3];
         }
 
         public unsafe void ProcessFrameBuffer(IntPtr bufferAddress, uint bufferSize)
@@ -75,19 +76,19 @@ namespace GrabFramesGeneral
             if (bufferAddress == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(bufferAddress));
 
-            var numBlocks = (int)Math.Ceiling((double)bufferSize / BlockSize);
+            var numBlocks = (int)Math.Ceiling((double)bufferSize / blockSize);
             var blockSizeBytes = blockSize * sizeof(short);
 
             for (var block = 0; block < numBlocks; block++)
             {
                 var sourceAddress = bufferAddress + block * blockSizeBytes;
-                var buffer = new short[BlockSize];
+                var buffer = new short[blockSize];
                 
                 Marshal.Copy(sourceAddress, buffer, 0, blockSize);
 
-                for (var i = 0; i < BlockSize; i++)
+                for (var i = 0; i < blockSize; i++)
                 {
-                    FramesArray[_countFrame, block, i] = unchecked((ushort)buffer[i]);
+                    framesArray[_countFrame, block, i] = unchecked((ushort)buffer[i]);
                 }
             }
 
@@ -146,8 +147,37 @@ namespace GrabFramesGeneral
                 }
             }
         }
+        public void StartGrabbing()
+        {
+            if (_transfer == null) return;
+            
+            _transfer.Snap();
+            _transfer.Wait(MaxTime);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed) return;
+
+            if (disposing)
+            {
+                _transfer?.Dispose();
+                _buffers?.Dispose();
+                _acqDevice?.Dispose();
+                _acquisition?.Dispose();
+                _view?.Dispose();
+            }
+
+            _disposed = true;
+        }
 
         public bool IsGrabbing => _transfer?.Grabbing ?? false;
-        public int CapturedFrames => _countFrames;
+        public int CapturedFrames => _countFrame;
     }
 }
