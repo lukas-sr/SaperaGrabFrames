@@ -16,7 +16,6 @@ namespace GrabFramesGeneral
         public ushort[,,] framesArray { get; private set; }
         public byte numFrames { get; }
         private byte _countFrame;
-        private readonly AcquisitionMode _mode;
         private const int MaxTime = 255;
         public ushort blockSize { get; private set; }
         private enum CameraModel
