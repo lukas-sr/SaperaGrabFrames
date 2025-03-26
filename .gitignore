@@ -1,3 +1,12 @@
+# Ignorar arquivos e pastas do Visual Studio
 .vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
 
-*.json
+# Ignorar arquivos de compilação
+*.csproj
+*.pdb
+bin/
+obj/

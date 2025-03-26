@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>GrabFramesGeneral</RootNamespace>
-    <AssemblyName>GrabFramesGeneral20252702</AssemblyName>
+    <AssemblyName>GrabFramesGeneral20252603</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>

@@ -46,22 +46,37 @@ namespace GrabFramesGeneral
             _location = new SapLocation(serverName, 0);
             
             var model = IdentifyCameraModel(serverName);
-            blockSize = model switch
+            if (model == CameraModel.XtiumCLHSPx8_1)
             {
-                CameraModel.XtiumCLHSPx8_1 => 12288,
-                CameraModel.Xtium2CLHSPx8_1 => 16384,
-                _ => throw new NotSupportedException($"Unsupported camera model: {serverName}")
-            };
+                blockSize = 12288;
+            }
+            else if (model == CameraModel.Xtium2CLHSPx8_1)
+            {
+                blockSize = 16384;
+            }
+            else
+            {
+                throw new NotSupportedException($"Unsupported camera model: {serverName}");
+            }
         }
 
         private CameraModel IdentifyCameraModel(string serverName)
         {
-            return serverName switch
+            CameraModel cameraModel;
+            if (serverName == "Xtium-CLHS_PX8_1")
             {
-                "Xtium-CLHS_PX8_1" => CameraModel.XtiumCLHSPx8_1,
-                "Xtium2-CLHS_PX8_1" => CameraModel.Xtium2CLHSPx8_1,
-                _ => throw new ArgumentException($"Unsupported camera: {serverName}")
-            };
+                cameraModel = CameraModel.XtiumCLHSPx8_1;
+            }
+            else if (serverName == "Xtium2-CLHS_PX8_1")
+            {
+                cameraModel = CameraModel.Xtium2CLHSPx8_1;
+            }
+            else
+            {
+                throw new ArgumentException($"Unsupported camera: {serverName}");
+            }
+
+            return cameraModel;
         }
         public void InitializeFrameArray(byte dim1, int dim2, int dim3)
         {
@@ -172,6 +187,8 @@ namespace GrabFramesGeneral
                 _acqDevice?.Dispose();
                 _acquisition?.Dispose();
                 _view?.Dispose();
+
+
             }
 
             _disposed = true;
