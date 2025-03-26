@@ -187,8 +187,6 @@ namespace GrabFramesGeneral
                 _acqDevice?.Dispose();
                 _acquisition?.Dispose();
                 _view?.Dispose();
-
-
             }
 
             _disposed = true;
