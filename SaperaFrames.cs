@@ -1,19 +1,23 @@
 ﻿using System;
+using System.IO;
+using System.Collections;
 using System.Runtime.InteropServices;
 using DALSA.SaperaLT.SapClassBasic;
+using DALSA.SaperaLT.Examples.NET.Utils;
+using System.Threading;
 
 namespace GrabFramesGeneral
 {
     public class SaperaFrames
     {
-        private SapAcquisition _acquisition;
-        private SapAcqDevice _acqDevice;
-        private SapBuffer _buffers;
-        private SapTransfer _transfer;
-        private SapView _view;
-        private SapLocation _location;  
-        private bool _disposed;
-        public static MyAcquisitionParams _acqParams;
+        public SapAcquisition _acq = null;
+        public SapAcqDevice _acqDevice = null;
+        public SapBuffer _buffers = null;
+        public SapTransfer _transfer = null;
+        public SapView _view = null;
+        public SapLocation _location;  
+        public bool _disposed;
+        public MyAcquisitionParams _acqParams;
         public ushort[,,] framesArray { get; private set; }
         public byte numFrames { get; }
         private byte _countFrame;
@@ -43,9 +47,12 @@ namespace GrabFramesGeneral
         }
 
         private void InitializeCameraResources(string serverName) {
-            _location = new SapLocation(serverName, 0);
+            Console.WriteLine("InitializeCameraResources");
+
+            //_location = new SapLocation(serverName, resourceIndex);
             
             var model = IdentifyCameraModel(serverName);
+
             if (model == CameraModel.XtiumCLHSPx8_1)
             {
                 blockSize = 12288;
@@ -78,7 +85,7 @@ namespace GrabFramesGeneral
 
             return cameraModel;
         }
-        public void InitializeFrameArray(byte dim1, int dim2, int dim3)
+        private void InitializeFrameArray(byte dim1, int dim2, int dim3)
         {
             if (dim1 == 0 || dim2 <= 0 || dim3 <= 0)
                 throw new ArgumentException("Invalid array dimensions");
@@ -86,7 +93,7 @@ namespace GrabFramesGeneral
             framesArray = new ushort[dim1, dim2, dim3];
         }
 
-        public unsafe void ProcessFrameBuffer(IntPtr bufferAddress, uint bufferSize)
+        private unsafe void ProcessFrameBuffer(IntPtr bufferAddress, uint bufferSize)
         {
             if (bufferAddress == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(bufferAddress));
@@ -96,7 +103,7 @@ namespace GrabFramesGeneral
 
             for (var block = 0; block < numBlocks; block++)
             {
-                var sourceAddress = bufferAddress + block * blockSizeBytes;
+                var sourceAddress = bufferAddress + (block * blockSizeBytes * sizeof(ushort));
                 var buffer = new short[blockSize];
                 
                 Marshal.Copy(sourceAddress, buffer, 0, blockSize);
@@ -110,57 +117,77 @@ namespace GrabFramesGeneral
             _countFrame++;
         }
 
-        public void ConfigureTransfer() {
-            try {
-                if (SapManager.GetResourceCount(_location.ServerName, SapManager.ResourceType.Acq) > 0) {
-                    _acquisition = new SapAcquisition(_location, _acqParams.ConfigFileName);
-                    ConfigureResources(_acquisition);
+        public void ConfigureTransfer()
+        {
+            try
+            {
+                _location = new SapLocation(_acqParams.ServerName, _acqParams.ResourceIndex);
+
+                if (SapManager.GetResourceCount(_location.ServerName, SapManager.ResourceType.Acq) > 0)
+                {
+                    _acq = new SapAcquisition(_location, _acqParams.ConfigFileName);
+                    _buffers = new SapBufferWithTrash(2, _acq, SapBuffer.MemoryType.ScatterGather);
+                    _transfer = new SapAcqToBuf(_acq, _buffers);
+
+                    ConfigureTransferEvents();
+
+                    if (!_acq.Create())
+                    {
+                        Console.WriteLine("Error creating SapAcquisition!");
+                        Destroy(_acq, _acqDevice, _buffers, _transfer, _view);
+                        return;
+                    }
                 }
-                else if (SapManager.GetResourceCount(_location.ServerName, SapManager.ResourceType.AcqDevice) > 0) {
+                else if (SapManager.GetResourceCount(_location.ServerName, SapManager.ResourceType.AcqDevice) > 0)
+                {
                     _acqDevice = new SapAcqDevice(_location, _acqParams.ConfigFileName);
-                    ConfigureResources(_acqDevice);
+                    _buffers = new SapBufferWithTrash(2, _acqDevice, SapBuffer.MemoryType.ScatterGather);
+                    _transfer = new SapAcqDeviceToBuf(_acqDevice, _buffers);
                 }
 
                 _view = new SapView(_buffers);
-                ConfigureTransferEvents();
+
+                if (!_buffers.Create() || !_transfer.Create() || !_view.Create())
+                {
+                    Console.WriteLine("Error during object creation");
+                    Destroy(_acq, _acqDevice, _buffers, _transfer, _view);
+                    return;
+                }
+
+                InitializeFrameArray(numFrames, _buffers.Height, _buffers.Width);
+            }
+            catch (Exception ex)
+            {
+                 throw new InvalidOperationException("Configuration failed", ex);
+            }
+        }
+        public void ConfigureTransferEvents() {
+            _transfer.Pairs[0].EventType = SapXferPair.XferEventType.EndOfFrame;
+            _transfer.XferNotify += new SapXferNotifyHandler(TransferCallback); //HandleTransferNotification;
+            object[] context = new object[2];
+            context[0] = _view;
+            context[1] = _buffers;
+            _transfer.XferNotifyContext = context;
+        }
+
+        public void TransferCallback(object sender, SapXferNotifyEventArgs e)
+        {
+            if (_transfer == null || _buffers == null || !_transfer.Grabbing) return;
+
+            object[] contextContent = e.Context as object[];
+            SapView view = contextContent[0] as SapView;
+            SapBuffer pBufferAcq = contextContent[1] as SapBuffer;
+            Console.WriteLine(pBufferAcq.Height.ToString());
+            try {
+                view.Show();
+                if (_buffers.GetAddress(out IntPtr address)) {
+                    ProcessFrameBuffer(address, (uint)_buffers.Width);
+                }
             }
             catch (Exception ex) {
-                throw new InvalidOperationException("Configuration failed", ex);
+                Console.WriteLine($"Error processing frame: {ex.Message}");
             }
-        }
-
-        private void ConfigureResources(dynamic acquisitionObject) {
-            _buffers = new SapBufferWithTrash(2, acquisitionObject, SapBuffer.MemoryType.ScatterGather);
-            _transfer = new SapAcqToBuf(acquisitionObject, _buffers);
-
-            if (!acquisitionObject.Create())
-            {
-                Dispose();
-                throw new InvalidOperationException("Failed to create acquisition object");
-            }
-        }
-
-        private void ConfigureTransferEvents() {
-            _transfer.Pairs[0].EventType = SapXferPair.XferEventType.EndOfFrame;
-            _transfer.XferNotify += HandleTransferNotification;
-            _transfer.XferNotifyContext = _view;
-        }
-
-        private void HandleTransferNotification(object sender, SapXferNotifyEventArgs e)
-        {
-            if (_transfer == null || !_transfer.Grabbing) return;
-
-            if (e.Context is SapView view && _buffers != null) {
-                try {
-                    view.Show();
-                    if (_buffers.GetAddress(out IntPtr address)) {
-                        ProcessFrameBuffer(address, (uint)_buffers.Width);
-                    }
-                }
-                catch (Exception ex) {
-                    Console.WriteLine($"Error processing frame: {ex.Message}");
-                }
-            }
+            
         }
         public void StartGrabbing()
         {
@@ -168,6 +195,12 @@ namespace GrabFramesGeneral
             
             _transfer.Snap();
             _transfer.Wait(MaxTime);
+
+            //_countFrame++;
+
+            Analysis();
+
+            Destroy(_acq, _acqDevice, _buffers, _transfer, _view);
         }
 
         public void Dispose()
@@ -185,13 +218,78 @@ namespace GrabFramesGeneral
                 _transfer?.Dispose();
                 _buffers?.Dispose();
                 _acqDevice?.Dispose();
-                _acquisition?.Dispose();
+                _acq?.Dispose();
                 _view?.Dispose();
-
-
             }
 
             _disposed = true;
+        }
+
+        public void Destroy(SapAcquisition acq, SapAcqDevice camera, SapBuffer buf, SapTransfer xfer, SapView view)
+        {
+
+            if (xfer != null)
+            {
+                xfer.Destroy();
+                xfer.Dispose();
+            }
+
+            if (buf != null)
+            {
+                buf.Destroy();
+                buf.Dispose();
+            }
+
+
+            if (camera != null)
+            {
+                camera.Destroy();
+                camera.Dispose();
+            }
+
+            if (acq != null)
+            {
+                acq.Destroy();
+                acq.Dispose();
+            }
+
+
+            if (view != null)
+            {
+                view.Destroy();
+                view.Dispose();
+            }
+
+            Console.WriteLine("\nPress any key to terminate\n");
+            Console.ReadKey(true);
+        }
+    
+        public void Analysis()
+        {
+            var min = 1200;
+            var max = 0;
+
+            for (int i = 0; i < numFrames; i++)
+            {
+                for (int j = 0; j < 128; j++)
+                {
+                    for (int k = 0; k < 16384; k++)
+                    {
+
+                        if (framesArray[i, j, k] > max)
+                        {
+                            max = framesArray[i, j, k];
+                        }
+                        else if (framesArray[i, j, k] < min)
+                        {
+                            min = framesArray[i, j, k];
+                        }
+                    }
+                }
+            }
+
+            Console.WriteLine(max.ToString());
+            Console.WriteLine(min.ToString());
         }
 
         public bool IsGrabbing => _transfer?.Grabbing ?? false;
