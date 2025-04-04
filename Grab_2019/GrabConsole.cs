@@ -1,13 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-using System.Runtime.InteropServices;
-
-using DALSA.SaperaLT.SapClassBasic;
 using DALSA.SaperaLT.Examples.NET.Utils;
-using System.Security.Cryptography;
-using System.Threading;
 using GrabFramesGeneral;
 
 namespace DALSA.SaperaLT.Examples.NET.CSharp.GrabConsole
@@ -21,6 +13,7 @@ namespace DALSA.SaperaLT.Examples.NET.CSharp.GrabConsole
             AllocConsole();
             Console.WriteLine("Sapera Console Grab Example (Polling Mode)");
 
+            // Creating acquisiton params to populate with console options
             MyAcquisitionParams acqParams = new MyAcquisitionParams();
 
             if (!GetOptions(args, acqParams))
@@ -30,20 +23,37 @@ namespace DALSA.SaperaLT.Examples.NET.CSharp.GrabConsole
                 return;
             }
 
+            // Init class with constructor of the method with acquisiton params populated
             SaperaFrames _saperaFrames = new SaperaFrames(
                 acqParams.ServerName,
-                acqParams.ConfigFileName,
-                nFrames: 10
+                acqParams.ConfigFileName
             );
 
+            // Configure transfer objects
+            Console.WriteLine("Configuring...");
             _saperaFrames.ConfigureTransfer();
 
+            // Configure transfer events
+            _saperaFrames.ConfigureTransferEvents();
+
+            byte nFrames = 10;
+            // Create the objects 
+            Console.WriteLine("Creting Objects...");
+            _saperaFrames.CreateObjects();
+
+            // Start grabbing
             Console.WriteLine("Processing frames...");
-            while (_saperaFrames.CapturedFrames < _saperaFrames.numFrames)
-            {
-                _saperaFrames.StartGrabbing();
-                Thread.Sleep(100);
-            }
+            _saperaFrames.StartGrabbing(nFrames);
+
+            ushort[,,] framesTotal = _saperaFrames.ProcessCapturedFrames();
+
+            //print dimensions for framesTotal variable
+            Console.WriteLine("Dimension 0: {0}", framesTotal.GetLength(0));
+            Console.WriteLine("Dimension 1: {0}", framesTotal.GetLength(1));
+            Console.WriteLine("Dimension 2: {0}", framesTotal.GetLength(2));
+            Console.WriteLine("RandomValue: {0}", framesTotal[0, 0, 100]);
+
+            _saperaFrames.DestroyAll();
         }
         static bool GetOptions(string[] args, MyAcquisitionParams acqParams)
         {
