@@ -3,8 +3,8 @@ using System.IO;
 using System.Collections;
 using System.Runtime.InteropServices;
 using DALSA.SaperaLT.SapClassBasic;
-using DALSA.SaperaLT.Examples.NET.Utils;
 using System.Threading;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace GrabFramesGeneral
 {
@@ -19,17 +19,18 @@ namespace GrabFramesGeneral
         public bool _disposed;
         public MyAcquisitionParams _acqParams;
         public ushort[,,] framesArray { get; private set; }
-        public byte numFrames { get; }
-        private byte _countFrame;
+        public byte numFrames;
+        public bool isTDI = false;
+        public byte _countFrame;
         private const int MaxTime = 255;
         public ushort blockSize { get; private set; }
+        private ushort TDIHeigth = 1;
         private enum CameraModel
         {
             XtiumCLHSPx8_1,
             Xtium2CLHSPx8_1
         }
-
-        public SaperaFrames(string serverName, string filePath, byte nFrames)
+        public SaperaFrames(string serverName, string filePath)
         {
             if (string.IsNullOrEmpty(serverName))
                 throw new ArgumentException("Server name cannot be null or empty", nameof(serverName));
@@ -44,8 +45,11 @@ namespace GrabFramesGeneral
                 ConfigFileName = filePath
             };
 
-            numFrames = nFrames;
+            string fileName = Path.GetFileName(filePath);
+            isTDI = (fileName.Equals("TDI.ccf", StringComparison.OrdinalIgnoreCase)) ? true : false;
+
             InitializeCameraResources(serverName);
+
         }
 
         private void InitializeCameraResources(string serverName)
@@ -86,10 +90,11 @@ namespace GrabFramesGeneral
 
             return cameraModel;
         }
-        private void InitializeFrameArray(byte dim1, int dim2, int dim3)
+        public void InitializeFrameArray(byte dim1, int dim2, int dim3)
         {
-            if (dim1 == 0 || dim2 <= 0 || dim3 <= 0)
-                throw new ArgumentException("Invalid array dimensions");
+            if (isTDI) dim2 = 1;
+
+            if (dim1 == 0 || dim2 <= 0 || dim3 <= 0) throw new ArgumentException("Invalid array dimensions");
 
             framesArray = new ushort[dim1, dim2, dim3];
         }
@@ -165,7 +170,6 @@ namespace GrabFramesGeneral
             Console.WriteLine(pBufferAcq.Height.ToString());
             try
             {
-                view.Show();
                 if (_buffers.GetAddress(out IntPtr address))
                 {
                     ProcessFrameBuffer(address, (uint)_buffers.Width);
@@ -179,95 +183,89 @@ namespace GrabFramesGeneral
         }
         public void CreateObjects()
         {
-            if (!_acq.Create() || !_buffers.Create() || !_transfer.Create() || !_view.Create())
+            if (!_acq.Create() || !_buffers.Create() || !_transfer.Create())
             {
                 Console.WriteLine("Error during object creation");
-                Destroy(_acq, _acqDevice, _buffers, _transfer, _view);
+                DestroyAll();
                 return;
             }
-            InitializeFrameArray(numFrames, _buffers.Height, _buffers.Width);
         }
 
-        public void StartGrabbing()
+        public bool StartGrabbing(byte nFrames)
         {
-            if (_transfer == null) return;
-
-            for (uint i = 0; i < numFrames; i++)
-            {
-                _transfer.Snap();
-                _transfer.Wait(MaxTime);
-                Thread.Sleep(100);
-            }
-
-            ProcessCapturedFrames();
-
-            Destroy(_acq, _acqDevice, _buffers, _transfer, _view);
+            _countFrame = 0;
+            numFrames = nFrames;
+            InitializeFrameArray(numFrames, _buffers.Height, _buffers.Width);
+            return _transfer?.Snap(numFrames) ?? false;
         }
 
-        public void ProcessCapturedFrames()
+        public ushort[,,] ProcessCapturedFrames()
         {
             for (byte i = 0; i < numFrames; i++)
             {
                 if (_buffers.GetAddress(out IntPtr buffAddress))
                 {
-                    SaveFrameArray((UInt16)(_buffers.Width), (UInt16)(_buffers.Height), buffAddress);
+                    SaveFrameArray(
+                        (ushort)(_buffers.Width),
+                        (isTDI ? TDIHeigth : (ushort)(_buffers.Height)),
+                        buffAddress
+                    );
                 }
-                else
-                {
-                    Console.WriteLine("Error accessing buffer!");
-                }
+                else framesArray.SetValue(-1, 0);
             }
+            return framesArray;
         }
 
-        public void Destroy(SapAcquisition acq, SapAcqDevice camera, SapBuffer buf, SapTransfer xfer, SapView view)
+        public void DestroyAll()
         {
+            if (_transfer != null) { _transfer.Destroy(); _transfer.Dispose(); }
 
-            if (xfer != null)
-            {
-                xfer.Destroy();
-                xfer.Dispose();
-            }
+            if (_buffers != null) { _buffers.Destroy(); _buffers.Dispose(); }
 
-            if (buf != null)
-            {
-                buf.Destroy();
-                buf.Dispose();
-            }
+            if (_acqDevice != null) { _acqDevice.Destroy(); _acqDevice.Dispose(); }
 
+            if (_acq != null) { _acq.Destroy(); _acq.Dispose(); }
 
-            if (camera != null)
-            {
-                camera.Destroy();
-                camera.Dispose();
-            }
-
-            if (acq != null)
-            {
-                acq.Destroy();
-                acq.Dispose();
-            }
-
-
-            if (view != null)
-            {
-                view.Destroy();
-                view.Dispose();
-            }
+            if (_view != null) { _view.Destroy(); _view.Dispose(); }
         }
 
-        public void SaveFrameArray(UInt16 width, UInt16 height, IntPtr buffAddress)
+        public unsafe void SaveFrameArray(ushort width, ushort height, IntPtr buffAddress)
         {
+            byte[] ushortArr = new byte[blockSize];
 
-            int[] intArr = new int[blockSize];
+            if (isTDI) height = 1;
 
             for (byte block = 0; block < height; block++)
             {
-                Marshal.Copy(buffAddress + (block * blockSize * sizeof(UInt16)), intArr, 0, blockSize);
-
-                for (int i = 0; i < blockSize; i++)
+                if (!_buffers.GetParameter(SapBuffer.Prm.PIXEL_DEPTH, out int bitsPixel))
                 {
-                    framesArray[_countFrame, block, i] = (UInt16)intArr[i];
+                    return;
                 }
+
+                if (bitsPixel >= 12)
+                {
+                    ushort* dataPtr = (ushort*)(buffAddress + (block * blockSize * sizeof(ushort)));
+
+                    for (int i = 0; i < blockSize; i++)
+                    {
+                        byte byte1 = (byte)((*(dataPtr + i)) >> 8);
+                        byte byte2 = (byte)((*(dataPtr + i)) & 0xFF);
+
+                        framesArray[_countFrame, block, i] = (ushort)(byte1 << 8 | byte2);
+                    }
+                }
+                else
+                {
+                    byte* dataPtr = (byte*)(buffAddress + (block * blockSize * sizeof(byte)));
+
+                    for (int i = 0; i < blockSize; i++)
+                    {
+                        ushort value = *(dataPtr + i);
+
+                        framesArray[_countFrame, block, i] = ushortArr[i];
+                    }
+                }
+                
             }
             _countFrame++;
         }
