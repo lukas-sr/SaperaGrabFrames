@@ -13,7 +13,7 @@ namespace GrabFramesGeneral
         public SapTransfer _transfer = null;
         public SapView _view = null;
         public SapLocation _location;
-        public ushort[,,] framesArray;
+        public ushort[,,] framesArray { get; private set; } 
         public byte numFrames;
         public ushort blockSize { get; private set; }
         public enum CameraModel
@@ -155,9 +155,8 @@ namespace GrabFramesGeneral
         }
         public void CreateObjects()
         {
-            if (!_acq.Create() || !_buffers.Create() || !_transfer.Create())//!_view.Create())
+            if (!_acq.Create() || !_buffers.Create() || !_transfer.Create())
             {
-                //Console.WriteLine("Error during object creation");
                 DestroyAll();
                 return;
             }
