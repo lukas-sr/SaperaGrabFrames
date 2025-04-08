@@ -1,10 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Collections;
 using System.Runtime.InteropServices;
 using DALSA.SaperaLT.SapClassBasic;
-using System.Threading;
-using System.Runtime.InteropServices.ComTypes;
 
 namespace GrabFramesGeneral
 {
@@ -16,20 +13,20 @@ namespace GrabFramesGeneral
         public SapTransfer _transfer = null;
         public SapView _view = null;
         public SapLocation _location;
-        public bool _disposed;
-        public MyAcquisitionParams _acqParams;
-        public ushort[,,] framesArray { get; private set; }
+        public ushort[,,] framesArray;
         public byte numFrames;
-        public bool isTDI = false;
-        public byte _countFrame;
-        private const int MaxTime = 255;
         public ushort blockSize { get; private set; }
-        private ushort TDIHeigth = 1;
-        private enum CameraModel
+        public enum CameraModel
         {
-            XtiumCLHSPx8_1,
+            Xtium1CLHSPx8_1,
             Xtium2CLHSPx8_1
         }
+        public CameraModel model = CameraModel.Xtium1CLHSPx8_1;
+        private MyAcquisitionParams _acqParams;
+        private bool isTDI = false;
+        private byte _countFrame;
+        private const int MaxTime = 255;
+
         public SaperaFrames(string serverName, string filePath)
         {
             if (string.IsNullOrEmpty(serverName))
@@ -46,47 +43,31 @@ namespace GrabFramesGeneral
             };
 
             string fileName = Path.GetFileName(filePath);
-            isTDI = (fileName.Equals("TDI.ccf", StringComparison.OrdinalIgnoreCase)) ? true : false;
+
+            isTDI = (fileName.Equals("TDI.ccf", StringComparison.OrdinalIgnoreCase) || fileName.Equals("TDI extended.ccf", StringComparison.OrdinalIgnoreCase)) ? true : false;
 
             InitializeCameraResources(serverName);
-
         }
 
         private void InitializeCameraResources(string serverName)
         {
-            Console.WriteLine("InitializeCameraResources");
+            model = IdentifyCameraModel(serverName);
 
-            var model = IdentifyCameraModel(serverName);
+            if (model == CameraModel.Xtium1CLHSPx8_1) blockSize = 12288;
 
-            if (model == CameraModel.XtiumCLHSPx8_1)
-            {
-                blockSize = 12288;
-            }
-            else if (model == CameraModel.Xtium2CLHSPx8_1)
-            {
-                blockSize = 16384;
-            }
-            else
-            {
-                throw new NotSupportedException($"Unsupported camera model: {serverName}");
-            }
+            else if (model == CameraModel.Xtium2CLHSPx8_1) blockSize = 16384;
+
+            else throw new NotSupportedException($"Unsupported camera model: {serverName}");
         }
 
         private CameraModel IdentifyCameraModel(string serverName)
         {
             CameraModel cameraModel;
-            if (serverName == "Xtium-CLHS_PX8_1")
-            {
-                cameraModel = CameraModel.XtiumCLHSPx8_1;
-            }
-            else if (serverName == "Xtium2-CLHS_PX8_1")
-            {
-                cameraModel = CameraModel.Xtium2CLHSPx8_1;
-            }
-            else
-            {
-                throw new ArgumentException($"Unsupported camera: {serverName}");
-            }
+            if (serverName == "Xtium-CLHS_PX8_1") cameraModel = CameraModel.Xtium1CLHSPx8_1;
+
+            else if (serverName == "Xtium2-CLHS_PX8_1") cameraModel = CameraModel.Xtium2CLHSPx8_1;
+
+            else throw new ArgumentException($"Unsupported camera: {serverName}");
 
             return cameraModel;
         }
@@ -99,7 +80,7 @@ namespace GrabFramesGeneral
             framesArray = new ushort[dim1, dim2, dim3];
         }
 
-        private unsafe void ProcessFrameBuffer(IntPtr bufferAddress, uint bufferSize)
+        public unsafe void ProcessFrameBuffer(IntPtr bufferAddress, uint bufferSize)
         {
             if (bufferAddress == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(bufferAddress));
@@ -114,12 +95,8 @@ namespace GrabFramesGeneral
 
                 Marshal.Copy(sourceAddress, buffer, 0, blockSize);
 
-                for (var i = 0; i < blockSize; i++)
-                {
-                    framesArray[_countFrame, block, i] = unchecked((ushort)buffer[i]);
-                }
+                for (var i = 0; i < blockSize; i++) framesArray[_countFrame, block, i] = unchecked((ushort)buffer[i]);
             }
-
             _countFrame++;
         }
 
@@ -152,22 +129,17 @@ namespace GrabFramesGeneral
         }
         public void ConfigureTransferEvents()
         {
-            _transfer.Pairs[0].EventType = SapXferPair.XferEventType.EndOfFrame;
-            _transfer.XferNotify += new SapXferNotifyHandler(TransferCallback); //HandleTransferNotification;
-            object[] context = new object[2];
-            context[0] = _view;
-            context[1] = _buffers;
-            _transfer.XferNotifyContext = context;
+            _transfer.StartMode = SapTransfer.XferStartMode.Synchronous;
         }
 
         public void TransferCallback(object sender, SapXferNotifyEventArgs e)
         {
-            if (_transfer == null || _buffers == null || !_transfer.Grabbing) return;
+            if (_transfer == null || _buffers == null) return;
 
             object[] contextContent = e.Context as object[];
             SapView view = contextContent[0] as SapView;
             SapBuffer pBufferAcq = contextContent[1] as SapBuffer;
-            Console.WriteLine(pBufferAcq.Height.ToString());
+
             try
             {
                 if (_buffers.GetAddress(out IntPtr address))
@@ -177,15 +149,15 @@ namespace GrabFramesGeneral
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error processing frame: {ex.Message}");
+                throw new ArgumentException("Message:", nameof(ex.Message));
             }
 
         }
         public void CreateObjects()
         {
-            if (!_acq.Create() || !_buffers.Create() || !_transfer.Create())
+            if (!_acq.Create() || !_buffers.Create() || !_transfer.Create())//!_view.Create())
             {
-                Console.WriteLine("Error during object creation");
+                //Console.WriteLine("Error during object creation");
                 DestroyAll();
                 return;
             }
@@ -203,44 +175,55 @@ namespace GrabFramesGeneral
         {
             for (byte i = 0; i < numFrames; i++)
             {
-                if (_buffers.GetAddress(out IntPtr buffAddress))
-                {
-                    SaveFrameArray(
-                        (ushort)(_buffers.Width),
-                        (isTDI ? TDIHeigth : (ushort)(_buffers.Height)),
-                        buffAddress
-                    );
-                }
-                else framesArray.SetValue(-1, 0);
+                if (_buffers.GetAddress(out IntPtr buffAddress)) SaveFrameArray((UInt16)(_buffers.Width), (UInt16)(_buffers.Height), buffAddress);
+
+                else Console.WriteLine("Error accessing buffer!");
             }
             return framesArray;
         }
 
         public void DestroyAll()
         {
-            if (_transfer != null) { _transfer.Destroy(); _transfer.Dispose(); }
+            if (_transfer != null)
+            {
+                _transfer.Destroy();
+                _transfer.Dispose();
+            }
 
-            if (_buffers != null) { _buffers.Destroy(); _buffers.Dispose(); }
+            if (_buffers != null)
+            {
+                _buffers.Destroy();
+                _buffers.Dispose();
+            }
 
-            if (_acqDevice != null) { _acqDevice.Destroy(); _acqDevice.Dispose(); }
 
-            if (_acq != null) { _acq.Destroy(); _acq.Dispose(); }
+            if (_acqDevice != null)
+            {
+                _acqDevice.Destroy();
+                _acqDevice.Dispose();
+            }
 
-            if (_view != null) { _view.Destroy(); _view.Dispose(); }
+            if (_acq != null)
+            {
+                _acq.Destroy();
+                _acq.Dispose();
+            }
+
+
+            if (_view != null)
+            {
+                _view.Destroy();
+                _view.Dispose();
+            }
         }
 
         public unsafe void SaveFrameArray(ushort width, ushort height, IntPtr buffAddress)
         {
-            byte[] ushortArr = new byte[blockSize];
-
             if (isTDI) height = 1;
 
             for (byte block = 0; block < height; block++)
             {
-                if (!_buffers.GetParameter(SapBuffer.Prm.PIXEL_DEPTH, out int bitsPixel))
-                {
-                    return;
-                }
+                if (!_buffers.GetParameter(SapBuffer.Prm.PIXEL_DEPTH, out int bitsPixel)) { bitsPixel = 8; }
 
                 if (bitsPixel >= 12)
                 {
@@ -254,18 +237,14 @@ namespace GrabFramesGeneral
                         framesArray[_countFrame, block, i] = (ushort)(byte1 << 8 | byte2);
                     }
                 }
+
                 else
                 {
                     byte* dataPtr = (byte*)(buffAddress + (block * blockSize * sizeof(byte)));
 
-                    for (int i = 0; i < blockSize; i++)
-                    {
-                        ushort value = *(dataPtr + i);
-
-                        framesArray[_countFrame, block, i] = ushortArr[i];
-                    }
+                    for (int i = 0; i < blockSize; i++) framesArray[_countFrame, block, i] = *(dataPtr + i);
                 }
-                
+
             }
             _countFrame++;
         }

@@ -8,10 +8,11 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>GrabFramesGeneral</RootNamespace>
-    <AssemblyName>GrabFramesGeneral20250404C</AssemblyName>
+    <AssemblyName>GrabFramesGeneral20250408F</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -70,8 +71,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FramesArea.cs" />
-    <Compile Include="FramesTDI.cs" />
     <Compile Include="MyAquisitionParams.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SaperaFrames.cs" />
