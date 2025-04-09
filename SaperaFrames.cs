@@ -13,19 +13,18 @@ namespace GrabFramesGeneral
         public SapTransfer _transfer = null;
         public SapView _view = null;
         public SapLocation _location;
-        public ushort[,,] framesArray { get; private set; } 
+        private MyAcquisitionParams _acqParams;
+        private byte _countFrame;
+        public ushort[,,] framesArray;
         public byte numFrames;
         public ushort blockSize { get; private set; }
         public enum CameraModel
         {
-            Xtium1CLHSPx8_1,
-            Xtium2CLHSPx8_1
+            Xtium1,
+            Xtium2
         }
-        public CameraModel model = CameraModel.Xtium1CLHSPx8_1;
-        private MyAcquisitionParams _acqParams;
-        private bool isTDI = false;
-        private byte _countFrame;
-        private const int MaxTime = 255;
+        public CameraModel model;
+        public const int byteTreshold = 8;
 
         public SaperaFrames(string serverName, string filePath)
         {
@@ -44,8 +43,6 @@ namespace GrabFramesGeneral
 
             string fileName = Path.GetFileName(filePath);
 
-            isTDI = (fileName.Equals("TDI.ccf", StringComparison.OrdinalIgnoreCase) || fileName.Equals("TDI extended.ccf", StringComparison.OrdinalIgnoreCase)) ? true : false;
-
             InitializeCameraResources(serverName);
         }
 
@@ -53,19 +50,19 @@ namespace GrabFramesGeneral
         {
             model = IdentifyCameraModel(serverName);
 
-            if (model == CameraModel.Xtium1CLHSPx8_1) blockSize = 12288;
-
-            else if (model == CameraModel.Xtium2CLHSPx8_1) blockSize = 16384;
-
-            else throw new NotSupportedException($"Unsupported camera model: {serverName}");
+            if ((model != CameraModel.Xtium1) && (model != CameraModel.Xtium2))
+            {
+                throw new NotSupportedException($"Unsupported camera model: {serverName}");
+            }
         }
 
         private CameraModel IdentifyCameraModel(string serverName)
         {
             CameraModel cameraModel;
-            if (serverName == "Xtium-CLHS_PX8_1") cameraModel = CameraModel.Xtium1CLHSPx8_1;
 
-            else if (serverName == "Xtium2-CLHS_PX8_1") cameraModel = CameraModel.Xtium2CLHSPx8_1;
+            if (serverName == "Xtium-CLHS_PX8_1") cameraModel = CameraModel.Xtium1;
+
+            else if (serverName == "Xtium2-CLHS_PX8_1") cameraModel = CameraModel.Xtium2;
 
             else throw new ArgumentException($"Unsupported camera: {serverName}");
 
@@ -73,8 +70,6 @@ namespace GrabFramesGeneral
         }
         public void InitializeFrameArray(byte dim1, int dim2, int dim3)
         {
-            if (isTDI) dim2 = 1;
-
             if (dim1 == 0 || dim2 <= 0 || dim3 <= 0) throw new ArgumentException("Invalid array dimensions");
 
             framesArray = new ushort[dim1, dim2, dim3];
@@ -85,8 +80,10 @@ namespace GrabFramesGeneral
             if (bufferAddress == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(bufferAddress));
 
+            blockSize = (ushort)_buffers.Width;
+
             var numBlocks = (int)Math.Ceiling((double)bufferSize / blockSize);
-            var blockSizeBytes = blockSize * sizeof(short);
+            var blockSizeBytes = blockSize * sizeof(ushort);
 
             for (var block = 0; block < numBlocks; block++)
             {
@@ -118,8 +115,6 @@ namespace GrabFramesGeneral
                     _buffers = new SapBufferWithTrash(2, _acqDevice, SapBuffer.MemoryType.ScatterGather);
                     _transfer = new SapAcqDeviceToBuf(_acqDevice, _buffers);
                 }
-
-                _view = new SapView(_buffers);
 
             }
             catch (Exception ex)
@@ -160,6 +155,8 @@ namespace GrabFramesGeneral
                 DestroyAll();
                 return;
             }
+
+            blockSize = (ushort)_buffers.Width;
         }
 
         public bool StartGrabbing(byte nFrames)
@@ -174,7 +171,7 @@ namespace GrabFramesGeneral
         {
             for (byte i = 0; i < numFrames; i++)
             {
-                if (_buffers.GetAddress(out IntPtr buffAddress)) SaveFrameArray((UInt16)(_buffers.Width), (UInt16)(_buffers.Height), buffAddress);
+                if (_buffers.GetAddress(out IntPtr buffAddr)) SaveFrameArray((UInt16)(_buffers.Width), (UInt16)(_buffers.Height), buffAddr);
 
                 else Console.WriteLine("Error accessing buffer!");
             }
@@ -194,7 +191,6 @@ namespace GrabFramesGeneral
                 _buffers.Destroy();
                 _buffers.Dispose();
             }
-
 
             if (_acqDevice != null)
             {
@@ -216,15 +212,13 @@ namespace GrabFramesGeneral
             }
         }
 
-        public unsafe void SaveFrameArray(ushort width, ushort height, IntPtr buffAddress)
+        private unsafe void SaveFrameArray(ushort width, ushort height, IntPtr buffAddress)
         {
-            if (isTDI) height = 1;
-
             for (byte block = 0; block < height; block++)
             {
-                if (!_buffers.GetParameter(SapBuffer.Prm.PIXEL_DEPTH, out int bitsPixel)) { bitsPixel = 8; }
+                if (!_buffers.GetParameter(SapBuffer.Prm.PIXEL_DEPTH, out int bytePixel)) { bytePixel = 8; }
 
-                if (bitsPixel >= 12)
+                if (bytePixel > byteTreshold)
                 {
                     ushort* dataPtr = (ushort*)(buffAddress + (block * blockSize * sizeof(ushort)));
 
